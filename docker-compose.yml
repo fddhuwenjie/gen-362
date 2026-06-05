@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: temporal_lite
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  temporal-lite:
+    build: .
+    ports:
+      - "8132:8132"
+    environment:
+      DB_CONN: "postgres://postgres:postgres@postgres:5432/temporal_lite?sslmode=disable"
+      PORT: "8132"
+      MIGRATIONS_DIR: "/app/migrations"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
